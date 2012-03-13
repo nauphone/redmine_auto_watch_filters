@@ -1,0 +1,18 @@
+<%= error_messages_for 'auto_watch_filter' %>
+<%= hidden_field_tag 'confirm', 1 %>
+
+<div class="box">
+  <div class="tabular">
+    <p><label for="auto_watch_filter_name"><%=l(:field_name)%></label>
+    <%= text_field 'auto_watch_filter', 'name', :size => 80 %></p>
+    <p><label for="auto_watch_filter_group_id"><%=l(:field_watcher_group) %></label>
+    <%= select_tag 'auto_watch_filter[group_id]', options_from_collection_for_select(@groups, :id, :name, auto_watch_filter.group_id) %></p>
+  </div>
+
+  <fieldset>
+    <legend><%= l(:label_filter_plural) %></legend>
+    <%= render :partial => 'queries/filters', :locals => {:query => auto_watch_filter} %>
+  </fieldset>
+
+</div>
+

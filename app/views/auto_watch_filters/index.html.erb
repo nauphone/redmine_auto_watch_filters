@@ -1,0 +1,25 @@
+<div class="contextual">
+  <%= link_to l(:label_auto_watch_filter_new), {:controller => 'auto_watch_filters', :action => 'new', :project_id => @project}, :class => 'icon icon-add' %>
+</div>
+
+<h2><%= l(:label_auto_watch_filter_plural) %></h2>
+
+<% if @auto_watch_filters.empty? %>
+  <p><i><%=l(:label_no_data)%></i></p>
+<% else %>
+  <table class="list">
+  <% @auto_watch_filters.each do |auto_watch_filter| %>
+    <tr class="<%= cycle('odd', 'even') %>">
+      <td>
+        <%= link_to auto_watch_filter.name, :controller => 'auto_watch_filters', :action => 'edit', :id => auto_watch_filter.id, :project_id => @project %>
+      </td>
+      <td align="right">
+        <small>
+          <%= link_to l(:button_delete), {:controller => 'auto_watch_filters', :action => 'destroy', :id => auto_watch_filter.id, :project_id => @project}, :confirm => l(:text_are_you_sure), :method => :post, :class => 'icon icon-del' %>
+        </small>
+      </td>
+    </tr>
+  <% end %>
+  </table>
+<% end %>
+

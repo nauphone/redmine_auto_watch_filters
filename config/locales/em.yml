@@ -1,0 +1,5 @@
+en:
+  label_auto_watch_filter_plural: "Auto Watch Filters"
+  label_auto_watch_filter_new: "New Auto Watch Filter"
+  label_auto_watch_filter_edit: "Edit Auto Watch Filter"
+  field_watcher_group: "Watcher Group"
