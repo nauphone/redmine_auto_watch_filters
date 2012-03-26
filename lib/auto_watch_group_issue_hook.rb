@@ -8,6 +8,7 @@ class AutoWatchGroupIssuesControllerHook < Redmine::Hook::ViewListener
     issue = context[:issue]
     unless issue.project.enabled_modules.find_by_name('auto_watch').nil?
       AutoWatchFilter.all.each { |auto_watch_filter|
+        return if auto_watch_filter.group.nil?
         if auto_watch_filter.issues.include?(issue)
           auto_watch_filter.group.users.each { |user|
             if issue.addable_watcher_users.include?(user)
