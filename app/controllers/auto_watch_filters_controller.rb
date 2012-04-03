@@ -2,10 +2,6 @@ class AutoWatchFiltersController < ApplicationController
   unloadable
   include QueriesHelper
   helper :queries
-  def index
-    @project = Project.visible.find(params[:project_id])
-    @auto_watch_filters = AutoWatchFilter.find_all_by_project_id(@project)
-  end
 
   def new
     @project = Project.visible.find(params[:project_id])
@@ -18,7 +14,7 @@ class AutoWatchFiltersController < ApplicationController
 
     if request.post? && params[:confirm] && @auto_watch_filter.save
       flash[:notice] = l(:notice_successful_create)
-      redirect_to :controller => 'auto_watch_filters', :action => 'index'
+      redirect_to :controller => :projects, :action => :settings, :tab => "auto_watch_filters", :id => @project
       return
     end
     render :layout => false if request.xhr?
@@ -36,7 +32,7 @@ class AutoWatchFiltersController < ApplicationController
 
       if @auto_watch_filter.save
         flash[:notice] = l(:notice_successful_update)
-        redirect_to :controller => 'auto_watch_filters', :action => 'index', :project_id => @project
+        redirect_to :controller => :projects, :action => :settings, :tab => "auto_watch_filters", :id => @project
       end
     end
 
@@ -46,6 +42,6 @@ class AutoWatchFiltersController < ApplicationController
     @auto_watch_filter = AutoWatchFilter.find(params[:id])
     @project = Project.visible.find(params[:project_id])
     @auto_watch_filter.destroy if request.post?
-    redirect_to :controller => 'auto_watch_filters', :action => 'index', :project_id => @project
+    redirect_to :controller => :projects, :action => :settings, :tab => "auto_watch_filters", :id => @project
   end
 end

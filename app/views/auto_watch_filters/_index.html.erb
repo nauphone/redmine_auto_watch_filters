@@ -1,9 +1,7 @@
-<div class="contextual">
-  <%= link_to l(:label_auto_watch_filter_new), {:controller => 'auto_watch_filters', :action => 'new', :project_id => @project}, :class => 'icon icon-add' %>
-</div>
-
-<h2><%= l(:label_auto_watch_filter_plural) %></h2>
-
+<%
+  @project = Project.visible.find(params[:id])
+  @auto_watch_filters = AutoWatchFilter.find_all_by_project_id(@project)
+%>
 <% if @auto_watch_filters.empty? %>
   <p><i><%=l(:label_no_data)%></i></p>
 <% else %>
@@ -22,4 +20,6 @@
   <% end %>
   </table>
 <% end %>
-
+<div>
+  <%= link_to l(:label_auto_watch_filter_new), {:controller => 'auto_watch_filters', :action => 'new', :project_id => @project}, :class => 'icon icon-add' %>
+</div>
