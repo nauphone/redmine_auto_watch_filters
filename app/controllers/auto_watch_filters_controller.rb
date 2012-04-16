@@ -7,7 +7,6 @@ class AutoWatchFiltersController < ApplicationController
     @project = Project.visible.find(params[:project_id])
     @auto_watch_filter = AutoWatchFilter.new(params[:auto_watch_filter])
     @groups = Group.find(:all, :order => 'lastname')
-    @auto_watch_filter.group_id = @groups.first
     @auto_watch_filter.project_id = @project.id
 
     @auto_watch_filter.add_filters(params[:fields] || params[:f], params[:operators] || params[:op], params[:values] || params[:v]) if params[:fields] || params[:f]
