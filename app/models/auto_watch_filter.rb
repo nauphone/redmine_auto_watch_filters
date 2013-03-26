@@ -124,6 +124,10 @@ class AutoWatchFilter < ActiveRecord::Base
     has_filter?(field) ? filters[field][:values] : nil
   end
 
+  def value_for(field, index=0)
+    (values_for(field) || [])[index]
+  end
+
   def label_for(field)
     label = available_filters[field][:name] if available_filters.has_key?(field)
     label ||= field.gsub(/\_id$/, "")
