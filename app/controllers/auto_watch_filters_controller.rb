@@ -4,7 +4,7 @@ class AutoWatchFiltersController < ApplicationController
   helper :queries
 
   def new
-    @project = Project.visible.find(params[:project_id])
+    @project = Project.visible.find(:first, :conditions => {:identifier => params[:project_id]})
     @auto_watch_filter = AutoWatchFilter.new(params[:auto_watch_filter])
     @groups = Group.find(:all, :order => 'lastname')
     @auto_watch_filter.project_id = @project.id
@@ -21,7 +21,7 @@ class AutoWatchFiltersController < ApplicationController
 
   def edit
     @auto_watch_filter = AutoWatchFilter.find(params[:id])
-    @project = Project.visible.find(params[:project_id])
+    @project = Project.visible.find(:first, :conditions => {:identifier => params[:project_id]})
     @groups = Group.find(:all, :order => 'lastname')
 
     if request.post?
@@ -39,7 +39,7 @@ class AutoWatchFiltersController < ApplicationController
 
   def destroy
     @auto_watch_filter = AutoWatchFilter.find(params[:id])
-    @project = Project.visible.find(params[:project_id])
+    @project = Project.visible.find(:first, :conditions => {:identifier => params[:project_id]})
     @auto_watch_filter.destroy if request.post?
     redirect_to :controller => :projects, :action => :settings, :tab => "auto_watch_filters", :id => @project
   end

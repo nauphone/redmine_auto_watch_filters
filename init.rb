@@ -2,8 +2,7 @@ require 'redmine'
 
 require 'auto_watch_group_issue_hook'
 require 'projects_helper_patch'
-require "dispatcher"
-Dispatcher.to_prepare do
+ActionDispatch::Callbacks.to_prepare  do
   ProjectsHelper.send(:include, ::AutoWatchGroup::ProjectsHelperPatch)
 end
 

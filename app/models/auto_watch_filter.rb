@@ -90,6 +90,15 @@ class AutoWatchFilter < ActiveRecord::Base
   end
 
 
+  def available_filters_as_json
+    json = {}
+    available_filters.each do |field, options|
+      json[field] = options.slice(:type, :name, :values).stringify_keys
+    end
+    json
+  end
+
+
   def add_custom_fields_filters(custom_fields)
     @available_filters ||= {}
 
@@ -338,5 +347,22 @@ class AutoWatchFilter < ActiveRecord::Base
     filters_clauses.reject!(&:blank?)
 
     filters_clauses.any? ? filters_clauses.join(' AND ') : nil
+  end
+
+
+  def all_projects
+    @all_projects ||= Project.visible.all
+  end
+
+
+  def all_projects_values
+    return @all_projects_values if @all_projects_values
+
+    values = []
+    Project.project_tree(all_projects) do |p, level|
+      prefix = (level > 0 ? ('--' * level + ' ') : '')
+      values << ["#{prefix}#{p.name}", p.id.to_s]
+    end
+    @all_projects_values = values
   end
 end

@@ -1,5 +1,5 @@
 <%
-  @project = Project.visible.find(params[:id])
+	@project = Project.visible.find(:first, :conditions => {:identifier => params[:id]})
   @auto_watch_filters = AutoWatchFilter.find_all_by_project_id(@project)
 %>
 <% if @auto_watch_filters.empty? %>
