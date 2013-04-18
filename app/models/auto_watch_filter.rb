@@ -18,16 +18,16 @@ class AutoWatchFilter < ActiveRecord::Base
 
     trackers = project.nil? ? Tracker.find(:all, :order => 'position') : project.rolled_up_trackers
 
-    @available_filters = { "status_id" => { :type => :list_status, :order => 1, :values => IssueStatus.find(:all, :order => 'position').collect{|s| [s.name, s.id.to_s] } },
-                           "tracker_id" => { :type => :list, :order => 2, :values => trackers.collect{|s| [s.name, s.id.to_s] } },
-                           "priority_id" => { :type => :list, :order => 3, :values => IssuePriority.all.collect{|s| [s.name, s.id.to_s] } },
-                           "subject" => { :type => :text, :order => 8 },
-                           "created_on" => { :type => :date_past, :order => 9 },
-                           "updated_on" => { :type => :date_past, :order => 10 },
-                           "start_date" => { :type => :date, :order => 11 },
-                           "due_date" => { :type => :date, :order => 12 },
-                           "estimated_hours" => { :type => :integer, :order => 13 },
-                           "done_ratio" =>  { :type => :integer, :order => 14 }}
+    @available_filters = { "status_id" => { :type => :list_status, :order => 1, :values => IssueStatus.find(:all, :order => 'position').collect{|s| [s.name, s.id.to_s] } , :name => l(:field_status) },
+                           "tracker_id" => { :type => :list, :order => 2, :values => trackers.collect{|s| [s.name, s.id.to_s] }, :name => l(:field_tracker)  },
+                           "priority_id" => { :type => :list, :order => 3, :values => IssuePriority.all.collect{|s| [s.name, s.id.to_s] }, :name => l(:field_priority)  },
+                           "subject" => { :type => :text, :order => 8, :name => l(:field_subject)  },
+                           "created_on" => { :type => :date_past, :order => 9, :name => l(:field_created_on)  },
+                           "updated_on" => { :type => :date_past, :order => 10, :name => l(:field_updated_on)  },
+                           "start_date" => { :type => :date, :order => 11, :name => l(:field_start_date)  },
+                           "due_date" => { :type => :date, :order => 12, :name => l(:field_due_date) },
+                           "estimated_hours" => { :type => :integer, :order => 13, :name => l(:field_estimated_hours) },
+                           "done_ratio" =>  { :type => :integer, :order => 14, :name => l(:field_done_ratio) }}
 
     user_values = []
     user_values << ["<< #{l(:label_me)} >>", "me"] if User.current.logged?
@@ -45,23 +45,23 @@ class AutoWatchFilter < ActiveRecord::Base
           prefix = (level > 0 ? ('--' * level + ' ') : '')
           project_values << ["#{prefix}#{p.name}", p.id.to_s]
         end
-        @available_filters["project_id"] = { :type => :list, :order => 1, :values => project_values} unless project_values.empty?
+        @available_filters["project_id"] = { :type => :list, :order => 1, :values => project_values, :name => l(:field_project)} unless project_values.empty?
       end
     end
-    @available_filters["assigned_to_id"] = { :type => :list_optional, :order => 4, :values => user_values } unless user_values.empty?
-    @available_filters["author_id"] = { :type => :list, :order => 5, :values => user_values } unless user_values.empty?
+    @available_filters["assigned_to_id"] = { :type => :list_optional, :order => 4, :values => user_values, :name => l(:field_assigned_to) } unless user_values.empty?
+    @available_filters["author_id"] = { :type => :list, :order => 5, :values => user_values, :name => l(:field_author) } unless user_values.empty?
 
     group_values = Group.all.collect {|g| [g.name, g.id.to_s] }
-    @available_filters["member_of_group"] = { :type => :list_optional, :order => 6, :values => group_values } unless group_values.empty?
+    @available_filters["member_of_group"] = { :type => :list_optional, :order => 6, :values => group_values, :name => l(:field_member_of_group) } unless group_values.empty?
 
     role_values = Role.givable.collect {|r| [r.name, r.id.to_s] }
-    @available_filters["assigned_to_role"] = { :type => :list_optional, :order => 7, :values => role_values } unless role_values.empty?
+    @available_filters["assigned_to_role"] = { :type => :list_optional, :order => 7, :values => role_values, :name => l(:field_assigned_to_role) } unless role_values.empty?
 
     if User.current.logged?
-      @available_filters["watcher_id"] = { :type => :list, :order => 15, :values => [["<< #{l(:label_me)} >>", "me"]] }
+      @available_filters["watcher_id"] = { :type => :list, :order => 15, :values => [["<< #{l(:label_me)} >>", "me"]], :name => l(:field_watcher) }
     end
 
-    if project
+    if @project
       # project specific filters
       categories = @project.issue_categories.all
       unless categories.empty?
@@ -174,7 +174,7 @@ class AutoWatchFilter < ActiveRecord::Base
 
   def issues(options={})
     Issue.find :all, :include => ([:status, :project] + (options[:include] || [])).uniq,
-                     :conditions => Query.merge_conditions(statement, options[:conditions]),
+                     :conditions => statement,
                      :limit  => options[:limit],
                      :offset => options[:offset]
   rescue ::ActiveRecord::StatementInvalid => e
@@ -242,7 +242,7 @@ class AutoWatchFilter < ActiveRecord::Base
 
   def project_statement
     project_clauses = []
-    if project && !@project.descendants.active.empty?
+    if @project && !@project.descendants.active.empty?
       ids = [project.id]
       if has_filter?("subproject_id")
         case operator_for("subproject_id")
@@ -253,10 +253,10 @@ class AutoWatchFilter < ActiveRecord::Base
           # main project only
         else
           # all subprojects
-          ids += project.descendants.collect(&:id)
+          ids += @project.descendants.collect(&:id)
         end
       elsif Setting.display_subprojects_issues?
-        ids += project.descendants.collect(&:id)
+        ids += @project.descendants.collect(&:id)
       end
       project_clauses << "#{Project.table_name}.id IN (%s)" % ids.join(',')
     elsif project
@@ -365,4 +365,5 @@ class AutoWatchFilter < ActiveRecord::Base
     end
     @all_projects_values = values
   end
+
 end
