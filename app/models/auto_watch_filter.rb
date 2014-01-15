@@ -61,28 +61,28 @@ class AutoWatchFilter < ActiveRecord::Base
       @available_filters["watcher_id"] = { :type => :list, :order => 15, :values => [["<< #{l(:label_me)} >>", "me"]], :name => l(:field_watcher) }
     end
 
-    if @project
+    if project
       # project specific filters
-      categories = @project.issue_categories.all
+      categories = project.issue_categories.all
       unless categories.empty?
-        @available_filters["category_id"] = { :type => :list_optional, :order => 6, :values => categories.collect{|s| [s.name, s.id.to_s] } }
+        @available_filters["category_id"] = { :type => :list_optional, :order => 6, :values => categories.collect{|s| [s.name, s.id.to_s] }, :name => l(:field_category)  }
       end
-      versions = @project.shared_versions.all
+      versions = project.shared_versions.all
       unless versions.empty?
-        @available_filters["fixed_version_id"] = { :type => :list_optional, :order => 7, :values => versions.sort.collect{|s| ["#{s.project.name} - #{s.name}", s.id.to_s] } }
+        @available_filters["fixed_version_id"] = { :type => :list_optional, :order => 7, :values => versions.sort.collect{|s| ["#{s.project.name} - #{s.name}", s.id.to_s] }, :name => l(:field_fixed_version) }
       end
-      unless @project.leaf?
-        subprojects = @project.descendants.visible.all
+      unless project.leaf?
+        subprojects = project.descendants.visible.all
         unless subprojects.empty?
           @available_filters["subproject_id"] = { :type => :list_subprojects, :order => 13, :values => subprojects.collect{|s| [s.name, s.id.to_s] } }
         end
       end
-      add_custom_fields_filters(@project.all_issue_custom_fields)
+      add_custom_fields_filters(project.all_issue_custom_fields)
     else
       # global filters for cross project issue list
       system_shared_versions = Version.visible.find_all_by_sharing('system')
       unless system_shared_versions.empty?
-        @available_filters["fixed_version_id"] = { :type => :list_optional, :order => 7, :values => system_shared_versions.sort.collect{|s| ["#{s.project.name} - #{s.name}", s.id.to_s] } }
+        @available_filters["fixed_version_id"] = { :type => :list_optional, :order => 7, :values => system_shared_versions.sort.collect{|s| ["#{s.project.name} - #{s.name}", s.id.to_s] }, :name => l(:fixed_version_id) }
       end
       add_custom_fields_filters(IssueCustomField.find(:all, :conditions => {:is_filter => true, :is_for_all => true}))
     end
@@ -242,7 +242,7 @@ class AutoWatchFilter < ActiveRecord::Base
 
   def project_statement
     project_clauses = []
-    if @project && !@project.descendants.active.empty?
+    if project && !project.descendants.active.empty?
       ids = [project.id]
       if has_filter?("subproject_id")
         case operator_for("subproject_id")
@@ -253,10 +253,10 @@ class AutoWatchFilter < ActiveRecord::Base
           # main project only
         else
           # all subprojects
-          ids += @project.descendants.collect(&:id)
+          ids += project.descendants.collect(&:id)
         end
       elsif Setting.display_subprojects_issues?
-        ids += @project.descendants.collect(&:id)
+        ids += project.descendants.collect(&:id)
       end
       project_clauses << "#{Project.table_name}.id IN (%s)" % ids.join(',')
     elsif project
