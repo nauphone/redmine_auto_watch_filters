@@ -29,25 +29,11 @@ class AutoWatchFilter < ActiveRecord::Base
                            "estimated_hours" => { :type => :integer, :order => 13, :name => l(:field_estimated_hours) },
                            "done_ratio" =>  { :type => :integer, :order => 14, :name => l(:field_done_ratio) }}
 
+
     user_values = []
     user_values << ["<< #{l(:label_me)} >>", "me"] if User.current.logged?
-    if project
-      user_values += project.users.sort.collect{|s| [s.name, s.id.to_s] }
-    else
-      all_projects = Project.visible.all
-      if all_projects.any?
-        # members of visible projects
-        user_values += User.active.find(:all, :conditions => ["#{User.table_name}.id IN (SELECT DISTINCT user_id FROM members WHERE project_id IN (?))", all_projects.collect(&:id)]).sort.collect{|s| [s.name, s.id.to_s] }
+    user_values += project.users.sort.collect{|s| [s.name, s.id.to_s] }
 
-        # project filter
-        project_values = []
-        Project.project_tree(all_projects) do |p, level|
-          prefix = (level > 0 ? ('--' * level + ' ') : '')
-          project_values << ["#{prefix}#{p.name}", p.id.to_s]
-        end
-        @available_filters["project_id"] = { :type => :list, :order => 1, :values => project_values, :name => l(:field_project)} unless project_values.empty?
-      end
-    end
     @available_filters["assigned_to_id"] = { :type => :list_optional, :order => 4, :values => user_values, :name => l(:field_assigned_to) } unless user_values.empty?
     @available_filters["author_id"] = { :type => :list, :order => 5, :values => user_values, :name => l(:field_author) } unless user_values.empty?
 
@@ -56,36 +42,40 @@ class AutoWatchFilter < ActiveRecord::Base
 
     role_values = Role.givable.collect {|r| [r.name, r.id.to_s] }
     @available_filters["assigned_to_role"] = { :type => :list_optional, :order => 7, :values => role_values, :name => l(:field_assigned_to_role) } unless role_values.empty?
+    @available_filters["watcher_id"] = { :type => :list, :order => 15, :values => [["<< #{l(:label_me)} >>", "me"]], :name => l(:field_watcher) }
 
-    if User.current.logged?
-      @available_filters["watcher_id"] = { :type => :list, :order => 15, :values => [["<< #{l(:label_me)} >>", "me"]], :name => l(:field_watcher) }
+    categories = project.issue_categories.all
+    unless categories.empty?
+      @available_filters["category_id"] = { :type => :list_optional, :order => 6, :values => categories.collect{|s| [s.name, s.id.to_s] }, :name => l(:field_category)  }
     end
+    versions = project.shared_versions.all
+    unless versions.empty?
+      @available_filters["fixed_version_id"] = { :type => :list_optional, :order => 7, :values => versions.sort.collect{|s| ["#{s.project.name} - #{s.name}", s.id.to_s] }, :name => l(:field_fixed_version) }
+    end
+    unless project.leaf?
+      subprojects = project.descendants.visible.all
+      unless subprojects.empty?
+        @available_filters["subproject_id"] = { :type => :list_subprojects, :order => 13, :values => subprojects.collect{|s| [s.name, s.id.to_s] } }
+      end
+    end
+    add_custom_fields_filters(project.all_issue_custom_fields)
+    project_hierarchy = []
+    project.hierarchy.each { |x| project_hierarchy << x }
+    contexts = []
+    project_hierarchy.each { |x| contexts << TaggingPlugin::ContextHelper.context_for(x) }
+    tags = []
+    contexts.each do |context|
+      tags += ActsAsTaggableOn::Tag.find(:all, :conditions => ["id in (select tag_id from taggings where taggable_type = 'Issue' and context = ?)", context])
+    end
+    tags = tags.collect {|tag| [tag.name.gsub(/^#/, ''), tag.name]}
+    @available_filters["tags"] = {
+        :type => :list_optional,
+        :values => tags.uniq.sort,
+        :name => l(:field_tags),
+        :order => 21,
+        :field => "tags"
+    }
 
-    if project
-      # project specific filters
-      categories = project.issue_categories.all
-      unless categories.empty?
-        @available_filters["category_id"] = { :type => :list_optional, :order => 6, :values => categories.collect{|s| [s.name, s.id.to_s] }, :name => l(:field_category)  }
-      end
-      versions = project.shared_versions.all
-      unless versions.empty?
-        @available_filters["fixed_version_id"] = { :type => :list_optional, :order => 7, :values => versions.sort.collect{|s| ["#{s.project.name} - #{s.name}", s.id.to_s] }, :name => l(:field_fixed_version) }
-      end
-      unless project.leaf?
-        subprojects = project.descendants.visible.all
-        unless subprojects.empty?
-          @available_filters["subproject_id"] = { :type => :list_subprojects, :order => 13, :values => subprojects.collect{|s| [s.name, s.id.to_s] } }
-        end
-      end
-      add_custom_fields_filters(project.all_issue_custom_fields)
-    else
-      # global filters for cross project issue list
-      system_shared_versions = Version.visible.find_all_by_sharing('system')
-      unless system_shared_versions.empty?
-        @available_filters["fixed_version_id"] = { :type => :list_optional, :order => 7, :values => system_shared_versions.sort.collect{|s| ["#{s.project.name} - #{s.name}", s.id.to_s] }, :name => l(:fixed_version_id) }
-      end
-      add_custom_fields_filters(IssueCustomField.find(:all, :conditions => {:is_filter => true, :is_for_all => true}))
-    end
     @available_filters
   end
 
@@ -182,6 +172,26 @@ class AutoWatchFilter < ActiveRecord::Base
   end
 
  def sql_for_field(field, operator, value, db_table, db_field, is_custom_filter=false)
+    if field == "tags"
+      selected_values = values_for(field)
+      selected_values.each do |tag|
+        tag_find = Tag.where(:name => tag).last
+        tag_find.last_update = Date.current
+        tag_find.save
+      end
+      if operator == '!*'
+        sql = "(#{Issue.table_name}.id NOT IN (select taggable_id from taggings where taggable_type='Issue'))"
+        return sql
+      elsif operator == "*"
+        sql = "(#{Issue.table_name}.id IN (select taggable_id from taggings where taggable_type='Issue'))"
+        return sql
+      else
+        sql = selected_values.collect{|val| "'#{ActiveRecord::Base.connection.quote_string(val.gsub('\'', ''))}'"}.join(',')
+        sql = "(#{Issue.table_name}.id in (select taggable_id from taggings join tags on tags.id = taggings.tag_id where taggable_type='Issue' and tags.name in (#{sql})))"
+        sql = "(not #{sql})" if operator == '!'
+        return sql
+      end
+    end
     sql = ''
     case operator
     when "="
