@@ -55,7 +55,7 @@ class AutoWatchFilter < ActiveRecord::Base
     unless project.leaf?
       subprojects = project.descendants.visible.all
       unless subprojects.empty?
-        @available_filters["subproject_id"] = { :type => :list_subprojects, :order => 13, :values => subprojects.collect{|s| [s.name, s.id.to_s] } }
+        @available_filters["subproject_id"] = { :type => :list_subprojects, :order => 13, :name => l(:field_subproject), :values => subprojects.collect{|s| [s.name, s.id.to_s] } }
       end
     end
     add_custom_fields_filters(project.all_issue_custom_fields)
