@@ -1,6 +1,4 @@
 <%= error_messages_for 'auto_watch_filter' %>
-<%= hidden_field_tag 'confirm', 1 %>
-
 <div class="box">
   <div class="tabular">
     <p><label for="auto_watch_filter_name"><%=l(:field_name)%></label>
@@ -11,7 +9,7 @@
 
   <fieldset>
     <legend><%= l(:label_filter_plural) %></legend>
-    <%= render :partial => 'queries/filters', :locals => {:query => auto_watch_filter} %>
+    <%= render :partial => 'queries/filters', :locals => {:query => @query} %>
   </fieldset>
 
 </div>

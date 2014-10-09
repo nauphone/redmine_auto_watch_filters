@@ -5,7 +5,7 @@ class CreateAutoWatchFilters < ActiveRecord::Migration
       t.column "group_id", :integer, :null => false
       t.column "project_id", :integer, :null => false
       t.column "name", :string
-    end
+    end if !table_exists?("auto_watch_filters")
   end
 
   def self.down

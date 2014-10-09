@@ -6,11 +6,11 @@ ActionDispatch::Callbacks.to_prepare  do
   ProjectsHelper.send(:include, ::AutoWatchGroup::ProjectsHelperPatch)
 end
 
-Redmine::Plugin.register :redmine_auto_group_watchers do
+Redmine::Plugin.register :redmine_auto_watch_filters do
   name 'Auto Group Watchers'
-  author ''
+  author 'Alexei Margasov'
   description ''
-  version '0.0.1'
+  version '1.0.1'
 
   project_module :auto_watch do
     permission :manage_auto_watch_filters, { :auto_watch_filters => [:index, :new, :edit] }

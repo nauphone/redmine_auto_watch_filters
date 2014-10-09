@@ -1,6 +1,6 @@
 <h2><%= l(:label_auto_watch_filter_edit) %></h2>
 
-<%= form_tag({:action => 'edit', :project_id => @auto_watch_filter.project, :id => @auto_watch_filter}) do %>
+<%= form_tag({:action => 'update', :project_id => @auto_watch_filter.project, :id => @auto_watch_filter}) do %>
   <%= render :partial => 'form', :locals => {:auto_watch_filter => @auto_watch_filter} %>
   <%= submit_tag l(:button_save) %>
 <% end %>

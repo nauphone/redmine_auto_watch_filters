@@ -1,6 +1,7 @@
 <h2><%= l(:label_auto_watch_filter_new) %></h2>
 
-<%= form_tag({:action => 'new', :project_id => @auto_watch_filter.project}) do %>
+<%= form_tag({:action => 'create', :project_id => @auto_watch_filter.project}) do %>
+  <%= hidden_field_tag 'set_filter', '1' %>
   <%= render :partial => 'form', :locals => {:auto_watch_filter => @auto_watch_filter} %>
   <%= submit_tag l(:button_save) %>
 <% end %>
